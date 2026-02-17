@@ -1,0 +1,126 @@
+name: Publish API Packages
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - '[0-9]*'
+
+env:
+  JAVA_VERSION: '21.0.7'
+  JAVA_DIST: 'liberica'
+
+jobs:
+  build-and-publish-api:
+    name: Build and Publish API Packages
+    runs-on: windows-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Calculate Versioning Logic
+        shell: pwsh
+        run: |
+          $ref = "${{ github.ref }}"
+          if ($ref -like 'refs/tags/*') {
+            $tag = "${{ github.ref_name }}"
+            $displayVersion = $tag
+            $parts = $tag -split '[-.]'
+            $major = $parts[0]
+            $minor = $parts[1]
+            $patch = $parts[2]
+            $lastChar = $tag.Substring($tag.Length - 1).ToLower()
+            if ($lastChar -match "[a-z]") {
+                $letterValue = [int][char]$lastChar - 96
+                $serVersion = "$major.$minor.$patch.$letterValue"
+            } else {
+                $serVersion = "$major.$minor.$patch"
+            }
+          } else {
+            $branch = "${{ github.ref_name }}"
+            $displayVersion = "dev-$(Get-Date -Format 'yyyyMMddHHmmss')"
+            $serVersion = $displayVersion
+          }
+          "APP_DISPLAY_VERSION=$displayVersion" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "APP_SERIAL_VERSION=$serVersion" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DIST }}
+          cache: 'maven'
+          server-id: github
+          settings-path: ${{ github.workspace }}
+
+      - name: Build API Package
+        shell: pwsh
+        run: |
+          mvn versions:set "-DnewVersion=${{ env.APP_SERIAL_VERSION }}" -DgenerateBackupPoms=false
+          mvn clean package -DskipTests "-Dapp.semantic.version=${{ env.APP_SERIAL_VERSION }}" "-Dapp.display.version=${{ env.APP_DISPLAY_VERSION }}"
+
+      - name: Prepare API Packages
+        shell: pwsh
+        run: |
+          $ver = "${{ env.APP_DISPLAY_VERSION }}"
+          $apiDir = "samacros-api/target"
+          $outputDir = "output/api"
+          Write-Host "Preparing API packages..." -ForegroundColor Cyan
+          if (-not (Test-Path $outputDir)) { New-Item -ItemType Directory -Path $outputDir -Force }
+          Get-ChildItem "$apiDir/samacros-api-*.jar" | ForEach-Object {
+              $name = $_.Name
+              $target = ""
+              if ($name -like "*-sources.jar") {
+                $target = "saMacros-API-$ver-sources.jar"
+              } elseif ($name -like "*-javadoc.jar") {
+                $target = "saMacros-API-$ver-javadoc.jar"
+              } elseif ($name -match "samacros-api-[\d\.]+\.jar$") {
+                $target = "saMacros-API-$ver.jar"
+              }
+              if ($target -ne "") {
+                Copy-Item $_.FullName "$outputDir/$target" -Force
+                Write-Host "  [DONE] $name -> $target" -ForegroundColor Green
+              }
+          }
+
+      - name: Publish to GitHub Packages
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mvn deploy -DskipTests -s "$env:GITHUB_WORKSPACE/settings.xml" -B
+
+      - name: Generate Changelog
+        if: startsWith(github.ref, 'refs/tags/')
+        id: changelog_gen
+        shell: pwsh
+        run: |
+          $jsonPath = ".github/sources/updates.json"
+          $ver = "${{ env.APP_DISPLAY_VERSION }}"
+          $logFile = "release_body.txt"
+          if (Test-Path $jsonPath) {
+              $updates = Get-Content $jsonPath -Raw | ConvertFrom-Json
+              $entry = $updates."$ver"
+              if ($entry) {
+                  $body = "[$($entry.releaseDate)] $ver`n`n$($entry.description)"
+                  [System.IO.File]::WriteAllLines("$(Get-Location)/$logFile", $body, (New-Object System.Text.UTF8Encoding $False))
+                  return
+              }
+          }
+          "Release for version $ver" | Out-File -FilePath $logFile -Encoding utf8
+
+      - name: Publish API Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ env.APP_DISPLAY_VERSION }}
+          body_path: release_body.txt
+          draft: false
+          prerelease: ${{ contains(env.APP_DISPLAY_VERSION, '-') }}
+          files: |
+            output/api/*.jar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

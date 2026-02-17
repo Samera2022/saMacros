@@ -1,0 +1,7 @@
+{
+  "2.0.0": {
+    "releaseDate": "2026-02-12 17:46",
+    "description": "## [Added]\n- Script API: Event listening, logging, context access, cleanup.\n- Context API: Simulate actions, pixel color, toast, config, system/screen/macro/i18n/mouse info.\n- Macro Info: Recording, playing, paused, actions count.\n- System Info: DPI, dark mode, language, OS, Java version.\n- Screen Info: Resolution, multi-screen, coordinate conversion.\n- I18n: Translation, language detection.\n- Mouse Info: Get mouse position.\n\n---\n\n## [Added]\n- 脚本主API：事件监听、日志输出、上下文获取、资源清理。\n- 上下文API：模拟操作、像素颜色、通知、配置、系统/屏幕/宏/国际化/鼠标信息。\n- 宏信息API：录制、播放、暂停、操作数。\n- 系统信息API：DPI、暗色模式、系统语言、操作系统、Java版本。\n- 屏幕信息API：分辨率、多屏、坐标转换。\n- 国际化API：翻译、语言检测。\n- 鼠标信息API：获取鼠标坐标。"
+  }
+}
+
