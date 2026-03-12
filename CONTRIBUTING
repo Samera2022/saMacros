@@ -1,0 +1,47 @@
+# Contributing to saMacros
+
+First off, thank you for considering contributing to **saMacros**! It's people like you who make saMacros a better tool for everyone.
+
+By participating in this project, you agree to abide by its terms.
+
+---
+
+## Development Philosophy
+
+We prioritize **modularity** (separating API from implementation) and **performance** (leveraging Java 21 features). If possible, please try to reduce the coupling of the code.
+
+## How Can I Contribute?
+
+### 1. Reporting Bugs
+- Check the [Issues](https://github.com/Samera2022/saMacros/issues) page to see if the bug has already been reported.
+- If not, open a new issue. Provide a clear title, a description of the problem, and steps to reproduce it.
+- Include your **version** and **OS environment**.
+
+### 2. Suggesting Enhancements
+- We love new ideas! Open an issue with the tag `enhancement` and describe the use case for the new feature.
+
+### 3. Pull Requests (PRs)
+1. **Fork** the repository and create your branch from `main`.
+2. **Coding Standards**:
+    - Follow standard Java naming conventions.
+    - Add **Javadoc** for any new public methods in the `api` module.
+    - If you add a new feature, please include a simple **Unit Test**.
+3. **Commit Messages**: Use descriptive titles (e.g., `feat: add mouse scroll support to JS API`).
+4. **Submit**: Open a PR against the `main` branch.
+
+## Project Structure
+- `samacros-api`: Contains interfaces and data models. **Do not** include implementation logic here.
+- `samacros-app`: The main application logic, UI (Swing/FlatLaf), and GraalVM JS integration.
+- `docs`: Documentation for users and script developers.
+
+## License
+By contributing, you agree that your contributions will be licensed under the **Apache License 2.0**.
+
+---
+
+## Communication
+If you have questions or want to discuss a major change before starting work, feel free to:
+- Open a [Discussion](https://github.com/Samera2022/saMacros/discussions).
+- Reach out to **Samera2022** via GitHub.
+
+**Thank you for making saMacros awesome!**
